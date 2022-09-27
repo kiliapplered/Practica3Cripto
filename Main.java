@@ -48,6 +48,11 @@ public class Main {
                     DES cifrado= new DES("0000011111", "01010101");
                     cifrado.obtencionSubkeys();
                     cifrado.cifrado();
+                    System.out.println("");
+                    DES descifrado = new DES("0000011111", "11000100");
+                    descifrado.obtencionSubkeys();
+                    descifrado.descifrado();
+
                     //Rc4 encriptado=new Rc4(key, texto);
                     //mensaje = encriptado.encriptar();
                     //System.out.println("Encrypted Message: "+mensaje);

@@ -2,6 +2,8 @@ public class DES {
 
     int[] clave;
     int[] texto;
+    int[] subKey1;
+    int[] subKey2;
     int[][] S0={ { 1, 0, 3, 2 },
                  { 3, 2, 1, 0 },
                  { 0, 2, 1, 3 },
@@ -10,8 +12,6 @@ public class DES {
                  { 2, 0, 1, 3 },
                  { 3, 0, 1, 0 },
                  { 2, 1, 0, 3 } };
-    int[] subKey1;
-    int[] subKey2;
 
     public DES(String claveCadena, String textoCadena){
         this.clave=llenadoArreglos(claveCadena);
@@ -127,15 +127,10 @@ public class DES {
             return "11";
     }
 
-    public void cifrado(){
-        // Permutación inicial
-        int[] arregloPos1={1,5,2,0,3,7,4,6};
-        int[] arregloPermutado1=permutacion(this.texto, arregloPos1);
-        //imprimirArreglo(arregloPermutado1);
-
-        //Inicio Feistel
-        int[] left=division(arregloPermutado1, 1);
-        int[] right=division(arregloPermutado1, 2);
+    public int[] feistel(int[] arregloInicial, int sk, int vf){
+        // Se divide en secciones left y right 
+        int[] left=division(arregloInicial, 1);
+        int[] right=division(arregloInicial, 2);
         //imprimirArreglo(left);
         //imprimirArreglo(right);
 
@@ -144,10 +139,16 @@ public class DES {
         int[] arregloPos2={3,0,1,2,1,2,3,0};
         int[] expRight=permutacion(right, arregloPos2);
         //imprimirArreglo(expRight);
-        // Aplicación de XOR con Subkey1
+        // Aplicación de XOR con Subkey correspondiente
         int[] xor1=new int[expRight.length];
-        for(int i=0; i<expRight.length; i++){
-            xor1[i]=(expRight[i]^this.subKey1[i]);
+        if(sk==1){
+            for(int i=0; i<expRight.length; i++){
+                xor1[i]=(expRight[i]^this.subKey1[i]);
+            }
+        } else {
+            for(int i=0; i<expRight.length; i++){
+                xor1[i]=(expRight[i]^this.subKey2[i]);
+            }
         }
         //imprimirArreglo(xor1);
         // Division previa a S-Box
@@ -187,67 +188,34 @@ public class DES {
         }
         //imprimirArreglo(xor2);
 
-        //Concatenación con mitad derecha
-        int[] concat2=union(xor2, right);
+        //Concatenación con mitad derecha e intercmabio
+        int[] concat2=new int[xor2.length*2];
+        if(vf==1){
+            concat2=union(right, xor2);
+        } else {
+            concat2=union(xor2, right);
+        }
         //imprimirArreglo(concat2);
+        return concat2;
+    }
+
+    public void cifrado(){
+        // Permutación inicial
+        int[] arregloPos1={1,5,2,0,3,7,4,6};
+        int[] arregloPermutado1=permutacion(this.texto, arregloPos1);
+        //imprimirArreglo(arregloPermutado1);
+
+        //Inicio Feistel
+        int[] concat2=feistel(arregloPermutado1, 1, 1);
 
         // Fin feistel
 
-        //Intercambio de izquierda y derecha
-        left=division(concat2, 2);
-        right=division(concat2, 1);
-        //imprimirArreglo(left);
-        //imprimirArreglo(right);
+        //Intercambio
+        int[] aux1=division(concat2, 1);
+        int[] aux2=division(concat2, 2);
+        concat2=union(aux1, aux2);
 
-        
-        int[] expRight2=permutacion(right, arregloPos2);
-        //imprimirArreglo(expRight2);
-        // Aplicación de XOR con Subkey2
-        //imprimirArreglo(subKey1);
-        //imprimirArreglo(subKey2);
-        int[] xor3=new int[expRight2.length];
-        for(int i=0; i<expRight2.length; i++){
-            xor3[i]=(expRight2[i]^this.subKey2[i]);
-        }
-        //imprimirArreglo(xor3);
-        // Division previa a S-Box
-        int[] temp3=division(xor3, 1);
-        int[] temp4=division(xor3, 2);
-
-        //S-Box S0
-        row=Integer.parseInt(""+temp3[0]+temp3[3],2);
-        col=Integer.parseInt(""+temp3[1]+temp3[2],2);
-        val=S0[row][col];
-        String val3=binario(val);
-        int[] cad3=llenadoArreglos(val3);
-        //imprimirArreglo(cad3);
-
-        //S-Box S1
-        row=Integer.parseInt(""+temp4[0]+temp4[3],2);
-        col=Integer.parseInt(""+temp4[1]+temp4[2],2);
-        val=S1[row][col];
-        String val4=binario(val);
-        int[] cad4=llenadoArreglos(val4);
-        //imprimirArreglo(cad4);
-
-        //Concatenación de resultados
-        int[] concat3=union(cad3, cad4);
-        //imprimirArreglo(concat3);
-        
-        //Permutacion ----------------------- 
-        int[] perm2=permutacion(concat3, arregloPos3);
-        //imprimirArreglo(perm2);
-
-        //XOR con la mitad izquierda
-        int[] xor4=new int[perm2.length];
-        for(int i=0; i<perm2.length; i++){
-            xor4[i]=(perm2[i]^left[i]);
-        }
-        //imprimirArreglo(xor4);
-
-        //Concatenación con mitad derecha
-        int[] concat4=union(xor4, right);
-        //imprimirArreglo(concat4);
+        int[] concat4=feistel(concat2, 2, 2);
 
         //Permutacion final
         int[] arregloPerm={3,0,2,4,6,1,7,5};
@@ -255,6 +223,31 @@ public class DES {
 
         imprimirArreglo(cadenaFinal);
 
+    }
+
+    public void descifrado(){
+        // Permutación inicial
+        int[] arregloPos1={1,5,2,0,3,7,4,6};
+        int[] arregloPermutado1=permutacion(this.texto, arregloPos1);
+        //imprimirArreglo(arregloPermutado1);
+
+        //Inicio Feistel
+        int[] concat2=feistel(arregloPermutado1, 2, 1);
+
+        // Fin feistel
+
+        //Intercambio
+        int[] aux1=division(concat2, 1);
+        int[] aux2=division(concat2, 2);
+        concat2=union(aux1, aux2);
+
+        int[] concat4=feistel(concat2, 1, 2);
+
+        //Permutacion final
+        int[] arregloPerm={3,0,2,4,6,1,7,5};
+        int[] cadenaFinal=permutacion(concat4, arregloPerm);
+
+        imprimirArreglo(cadenaFinal);
     }
     
 }
