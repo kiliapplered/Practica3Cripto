@@ -8,7 +8,7 @@ public class DES {
 
     int[] clave;    // Clave con la que el texto será cifrada. 
     int[] texto;    // Texto a cifrar o descifrar.
-    int[] subKey1;  // Subllave gennerada 1.
+    int[] subKey1;  // Subllave generada 1.
     int[] subKey2;  // Subllave generada 2.
     // S-Boxes.
     int[][] S0={ { 1, 0, 3, 2 },
@@ -164,7 +164,7 @@ public class DES {
 
     /* 
      * Obtención de subkeys.
-     * Realiza la obtención de las subkeys a partir de la key proporcionada por el usuario. 
+     * Realiza la aplicación de la función feistel. 
      */
     public int[] feistel(int[] arregloInicial, int sk, int vf){
 
@@ -221,7 +221,7 @@ public class DES {
             xor2[i]=(perm1[i]^left[i]);
         }
 
-        // Concatenación con mitad derecha e intercmabio
+        // Concatenación con mitad derecha
         int[] concat2=new int[xor2.length*2];
         if(vf==1){
             concat2=union(right, xor2);
@@ -249,6 +249,8 @@ public class DES {
         
         // Concatenación
         concat=union(aux1, aux2);
+
+        //  Aplicación de Feistel
         int[] concat2=feistel(concat, 2, 2);
 
         // Permutacion final
@@ -275,6 +277,8 @@ public class DES {
 
         // Concatenación
         concat2=union(aux1, aux2);
+
+        //  Aplicación de Feistel
         int[] concat4=feistel(concat2, 1, 2);
 
         // Permutacion final
